@@ -3,7 +3,6 @@
 //!
 
 use bcrypt::{BcryptError, BcryptResult};
-use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
 /// A bcrypt hash result before concatenating

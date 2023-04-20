@@ -1,4 +1,8 @@
 defmodule Password.Native do
+  @moduledoc """
+  Documentation for `Password.Native`. Module for linking Elixir to the Rust library
+  """
+
   version = Mix.Project.config()[:version]
 
   use RustlerPrecompiled,
@@ -26,7 +30,7 @@ defmodule Password.Native do
     ]
 
   def hash(_password), do: nif_error()
-  def hash_with(_password, _algorithm), do: nif_error()
+  def hash_with(_password, _algorithm, _options \\ nil), do: nif_error()
   def verify(_password, _hash), do: nif_error()
   def verify_with(_password, _hash, _algorithms), do: nif_error()
   def known_algorithms, do: nif_error()

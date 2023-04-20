@@ -1,5 +1,9 @@
-use password_hash::Ident;
+use base64::Engine;
+use password_hash::rand_core::RngCore;
+use password_hash::{Ident, Salt};
+use rustler::types::atom;
 use rustler::{Env, NifResult, Term};
+use std::collections::HashMap;
 
 mod algorithms;
 pub(crate) mod bcrypt_copy;
@@ -18,6 +22,48 @@ cfg_if::cfg_if! {
     }
 }
 
+pub enum ErrorTuple<E> {
+    Ok,
+    Err(E),
+}
+
+impl<E> rustler::Encoder for ErrorTuple<E>
+where
+    E: std::fmt::Display + rustler::Encoder,
+{
+    fn encode<'c>(&self, env: Env<'c>) -> Term<'c> {
+        match *self {
+            ErrorTuple::Ok => atom::ok().encode(env),
+            ErrorTuple::Err(ref err) => (atom::error().encode(env), err.encode(env)).encode(env),
+        }
+    }
+}
+
+impl<T, E> From<Result<T, E>> for ErrorTuple<E> {
+    fn from(res: Result<T, E>) -> ErrorTuple<E> {
+        match res {
+            Ok(_) => ErrorTuple::Ok,
+            Err(err) => ErrorTuple::Err(err),
+        }
+    }
+}
+
+pub trait PasswordVersion {
+    fn identifier(&self) -> password_hash::Ident;
+    fn find_algorithm_verifier(
+        algorithm: &password_hash::Ident,
+    ) -> Result<Box<dyn password_hash::PasswordVerifier>, String>;
+    fn hash_password(
+        &self,
+        password: &str,
+        salt: Salt,
+        options: HashMap<String, u32>,
+    ) -> Result<String, String>;
+    fn from_identifier(identifier: password_hash::Ident) -> Option<Self>
+    where
+        Self: Sized;
+}
+
 pub enum Algorithm {
     #[cfg(feature = "argon2")]
     Argon2(algorithms::argon2::Argon2Subversion),
@@ -28,7 +74,6 @@ pub enum Algorithm {
     #[cfg(feature = "bcrypt")]
     Bcrypt(algorithms::bcrypt::BcryptSubversion),
 }
-
 
 impl PasswordVersion for Algorithm {
     fn identifier(&self) -> password_hash::Ident {
@@ -45,42 +90,81 @@ impl PasswordVersion for Algorithm {
         }
     }
 
-    fn find_algorithm(
-        options: &password_hash::PasswordHash<'_>,
+    fn from_identifier(identifier: password_hash::Ident) -> Option<Self> {
+        #[cfg(feature = "argon2")]
+        if let Some(algo) = algorithms::argon2::Argon2Subversion::from_identifier(identifier) {
+            dbg!("argon2");
+            return Some(Algorithm::Argon2(algo));
+        }
+
+        #[cfg(feature = "scrypt")]
+        if identifier == scrypt::ALG_ID {
+            dbg!("scrypt");
+            return Some(Algorithm::Scrypt);
+        }
+
+        #[cfg(feature = "pbkdf2")]
+        if let Some(algo) = algorithms::pbkdf2::Pbkdf2Subversion::from_identifier(identifier) {
+            dbg!("pbkdf2");
+            return Some(Algorithm::Pbkdf2(algo));
+        }
+
+        #[cfg(feature = "bcrypt")]
+        if let Some(algo) = algorithms::bcrypt::BcryptSubversion::from_identifier(identifier) {
+            dbg!("bcrypt");
+            return Some(Algorithm::Bcrypt(algo));
+        }
+
+        None
+    }
+
+    fn find_algorithm_verifier(
+        algorithm: &password_hash::Ident,
     ) -> Result<Box<dyn password_hash::PasswordVerifier>, String> {
         #[cfg(feature = "argon2")]
-        if let Ok(algo) = algorithms::argon2::Argon2Subversion::find_algorithm(options) {
+        if let Ok(algo) = algorithms::argon2::Argon2Subversion::find_algorithm_verifier(algorithm) {
             dbg!("argon2");
             return Ok(algo);
         }
 
         #[cfg(feature = "scrypt")]
-        if options.algorithm == scrypt::ALG_ID {
+        if algorithm == &scrypt::ALG_ID {
             dbg!("scrypt");
             return Ok(Box::new(scrypt::Scrypt));
         }
 
         #[cfg(feature = "pbkdf2")]
-        if let Ok(algo) = algorithms::pbkdf2::Pbkdf2Subversion::find_algorithm(options) {
+        if let Ok(algo) = algorithms::pbkdf2::Pbkdf2Subversion::find_algorithm_verifier(algorithm) {
             dbg!("pbkdf2");
             return Ok(algo);
         }
 
         #[cfg(feature = "bcrypt")]
-        if let Ok(algo) = algorithms::bcrypt::BcryptSubversion::find_algorithm(options) {
+        if let Ok(algo) = algorithms::bcrypt::BcryptSubversion::find_algorithm_verifier(algorithm) {
             dbg!("bcrypt");
             return Ok(algo);
         }
 
         return Err(String::from("algorithm not found"));
     }
-}
 
-pub trait PasswordVersion {
-    fn identifier(&self) -> password_hash::Ident;
-    fn find_algorithm(
-        options: &password_hash::PasswordHash<'_>,
-    ) -> Result<Box<dyn password_hash::PasswordVerifier>, String>;
+    fn hash_password(
+        &self,
+        password: &str,
+        salt: Salt,
+        options: HashMap<String, u32>,
+    ) -> Result<String, String> {
+        match self {
+            #[cfg(feature = "argon2")]
+            Algorithm::Argon2(argon2) => argon2.hash_password(password, salt, options),
+            #[cfg(feature = "scrypt")]
+            Algorithm::Scrypt => algorithms::scrypt::hash_password(password, salt, options),
+            #[cfg(feature = "bcrypt")]
+            Algorithm::Bcrypt(bcrypt) => bcrypt.hash_password(password, salt, options),
+            #[cfg(feature = "pbkdf2")]
+            Algorithm::Pbkdf2(pbkdf2) => pbkdf2.hash_password(password, salt, options),
+        }
+    }
 }
 
 impl<'a> rustler::Decoder<'a> for Algorithm {
@@ -121,22 +205,46 @@ impl rustler::Encoder for Algorithm {
 
 #[rustler::nif(schedule = "DirtyCpu")]
 fn hash(password: &str) -> Result<String, String> {
-    inner_hash_with(password, DEFAULT_ALG)
+    inner_hash_with(password, DEFAULT_ALG, None)
 }
 
 #[rustler::nif(schedule = "DirtyCpu")]
-fn hash_with(password: &str, algorithm: Algorithm) -> Result<String, String> {
-    inner_hash_with(password, algorithm)
+fn hash_with(
+    password: &str,
+    algorithm: Algorithm,
+    options: Option<HashMap<String, u32>>,
+) -> Result<String, String> {
+    inner_hash_with(password, algorithm, options)
 }
 
-fn inner_hash_with(password: &str, algorithm: Algorithm) -> Result<String, String> {
-    Ok(String::from("oke"))
+fn inner_hash_with(
+    password: &str,
+    algorithm: Algorithm,
+    options: Option<HashMap<String, u32>>,
+) -> Result<String, String> {
+    let options = options.unwrap_or(HashMap::new());
+
+    let salt_string = if let Algorithm::Bcrypt(_) = algorithm {
+        // bcrypt uses non standard base64 encode and needs a salt that is 16 bytes
+        let mut buffer = [0; 16];
+        password_hash::rand_core::OsRng.fill_bytes(&mut buffer);
+        let salt = bcrypt::BASE_64.encode(buffer);
+        let salt = password_hash::SaltString::from_b64(&salt).map_err(|err| err.to_string())?;
+        salt
+    } else {
+        password_hash::SaltString::generate(password_hash::rand_core::OsRng)
+    };
+
+    algorithm.hash_password(password, salt_string.as_salt(), options)
 }
 
 #[rustler::nif(schedule = "DirtyCpu")]
-fn verify(password: &str, hash_string: &str) -> Result<(), String> {
-    let password_struct = to_password_struct(hash_string)?;
-    inner_verify(password, password_struct)
+fn verify(password: &str, hash_string: &str) -> ErrorTuple<String> {
+    let password_struct_result = to_password_struct(hash_string);
+    match password_struct_result {
+        Ok(password_struct) => ErrorTuple::from(inner_verify(password, password_struct)),
+        Err(e) => ErrorTuple::Err(e),
+    }
 }
 
 #[rustler::nif(schedule = "DirtyCpu")]
@@ -152,7 +260,7 @@ fn inner_verify(
     password: &str,
     password_struct: password_hash::PasswordHash<'_>,
 ) -> Result<(), String> {
-    let verifier = Algorithm::find_algorithm(&password_struct)?;
+    let verifier = Algorithm::find_algorithm_verifier(&password_struct.algorithm)?;
 
     if let Err(err) = verifier.verify_password(password.as_bytes(), &password_struct) {
         // dbg!(err);

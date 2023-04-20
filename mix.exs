@@ -34,9 +34,10 @@ defmodule Password.MixProject do
 
   defp aliases do
     [
-      quality: ["format", "credo", "dialyzer"],
+      quality: ["fmt", "credo", "dialyzer"],
       fmt: ["cmd --cd native/password_native cargo fmt", "format"],
-      cargo: "cmd --cd native/password_native cargo"
+      cargo: "cmd --cd native/password_native cargo",
+      "test.rust": "cargo test --all-features"
     ]
   end
 end

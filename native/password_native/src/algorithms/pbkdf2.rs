@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+use password_hash::Salt;
+
 pub enum Pbkdf2Subversion {
     Sha1,
     Sha256,
@@ -13,20 +17,38 @@ impl crate::PasswordVersion for Pbkdf2Subversion {
         }
     }
 
-    fn find_algorithm(
-        options: &password_hash::PasswordHash<'_>,
+    fn from_identifier(identifier: password_hash::Ident) -> Option<Self> {
+        match identifier {
+            pbkdf2::Algorithm::PBKDF2_SHA1_IDENT => Some(Pbkdf2Subversion::Sha1),
+            pbkdf2::Algorithm::PBKDF2_SHA256_IDENT => Some(Pbkdf2Subversion::Sha256),
+            pbkdf2::Algorithm::PBKDF2_SHA512_IDENT => Some(Pbkdf2Subversion::Sha512),
+            _ => None,
+        }
+    }
+
+    fn find_algorithm_verifier(
+        algorithm: &password_hash::Ident,
     ) -> Result<Box<dyn password_hash::PasswordVerifier>, String> {
         if [
             pbkdf2::Algorithm::PBKDF2_SHA1_IDENT,
             pbkdf2::Algorithm::PBKDF2_SHA256_IDENT,
             pbkdf2::Algorithm::PBKDF2_SHA512_IDENT,
         ]
-        .contains(&options.algorithm)
+        .contains(algorithm)
         {
             Ok(Box::new(pbkdf2::Pbkdf2))
         } else {
             Err(String::from("invalid algorithm"))
         }
+    }
+
+    fn hash_password(
+        &self,
+        password: &str,
+        salt: Salt,
+        options: HashMap<String, u32>,
+    ) -> Result<String, String> {
+        Ok(String::from("oke"))
     }
 }
 

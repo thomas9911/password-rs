@@ -1,14 +1,14 @@
 use crate::bcrypt_copy;
+use base64::Engine;
 use bcrypt::BcryptError;
 use password_hash::errors::{B64Error, InvalidValue};
 use password_hash::{Decimal, Error, Ident, ParamsString, PasswordHash, PasswordHasher, Salt};
-use base64::Engine;
+use std::collections::HashMap;
 
-pub const BCRYTP_2A_IDENT: Ident<'static> = Ident::new_unwrap("2a");
-pub const BCRYTP_2X_IDENT: Ident<'static> = Ident::new_unwrap("2x");
-pub const BCRYTP_2Y_IDENT: Ident<'static> = Ident::new_unwrap("2y");
-pub const BCRYTP_2B_IDENT: Ident<'static> = Ident::new_unwrap("2b");
-
+pub const BCRYPT_2A_IDENT: Ident<'static> = Ident::new_unwrap("2a");
+pub const BCRYPT_2X_IDENT: Ident<'static> = Ident::new_unwrap("2x");
+pub const BCRYPT_2Y_IDENT: Ident<'static> = Ident::new_unwrap("2y");
+pub const BCRYPT_2B_IDENT: Ident<'static> = Ident::new_unwrap("2b");
 
 pub enum BcryptSubversion {
     A,
@@ -96,8 +96,10 @@ impl PasswordHasher for BcryptWrapper {
         let salt: Salt = salt.into();
         let mut salt_buffer = [0; 16];
         // decode weird base64 thing
-
-        let bytes = bcrypt::BASE_64.decode(salt.as_str()).map_err(|_| Error::B64Encoding(B64Error::InvalidEncoding))?;
+        let bytes = bcrypt::BASE_64.decode(salt.as_str()).map_err(|err| {
+            dbg!(err);
+            Error::B64Encoding(B64Error::InvalidEncoding)
+        })?;
 
         if bytes.len() != 16 {
             return Err(Error::SaltInvalid(InvalidValue::Malformed));
@@ -140,29 +142,69 @@ fn map_bcrypt_error_to_password_hash_error(err: BcryptError) -> Error {
 impl crate::PasswordVersion for BcryptSubversion {
     fn identifier(&self) -> Ident {
         match self {
-            BcryptSubversion::A => BCRYTP_2A_IDENT,
-            BcryptSubversion::X => BCRYTP_2X_IDENT,
-            BcryptSubversion::Y => BCRYTP_2Y_IDENT,
-            BcryptSubversion::B => BCRYTP_2B_IDENT,
+            BcryptSubversion::A => BCRYPT_2A_IDENT,
+            BcryptSubversion::X => BCRYPT_2X_IDENT,
+            BcryptSubversion::Y => BCRYPT_2Y_IDENT,
+            BcryptSubversion::B => BCRYPT_2B_IDENT,
         }
     }
 
-    fn find_algorithm(
-        options: &password_hash::PasswordHash<'_>,
+    fn from_identifier(identifier: Ident) -> Option<Self> {
+        match identifier {
+            BCRYPT_2A_IDENT => Some(BcryptSubversion::A),
+            BCRYPT_2X_IDENT => Some(BcryptSubversion::X),
+            BCRYPT_2Y_IDENT => Some(BcryptSubversion::Y),
+            BCRYPT_2B_IDENT => Some(BcryptSubversion::B),
+            _ => None,
+        }
+    }
+
+    fn find_algorithm_verifier(
+        algorithm: &password_hash::Ident,
     ) -> Result<Box<dyn password_hash::PasswordVerifier>, String> {
         if [
-            BCRYTP_2A_IDENT,
-            BCRYTP_2X_IDENT,
-            BCRYTP_2Y_IDENT,
-            BCRYTP_2B_IDENT
+            BCRYPT_2A_IDENT,
+            BCRYPT_2X_IDENT,
+            BCRYPT_2Y_IDENT,
+            BCRYPT_2B_IDENT,
         ]
-        .contains(&options.algorithm)
+        .contains(algorithm)
         {
             Ok(Box::new(BcryptWrapper))
         } else {
             Err(String::from("invalid algorithm"))
         }
     }
+
+    fn hash_password(
+        &self,
+        password: &str,
+        salt: Salt,
+        options: HashMap<String, u32>,
+    ) -> Result<String, String> {
+        let cost = *options.get("cost").unwrap_or(&bcrypt::DEFAULT_COST);
+        let algorithm = self.identifier();
+        let params = BcryptWrapperParams { cost };
+
+        let password_struct = BcryptWrapper
+            .hash_password_customized(password.as_bytes(), Some(algorithm), None, params, salt)
+            .map_err(|err| err.to_string())?;
+
+        Ok(format_mfc_format(password_struct))
+    }
+}
+
+fn format_mfc_format(password_struct: PasswordHash) -> String {
+    format!(
+        "${}${:02}${}{}",
+        password_struct.algorithm,
+        password_struct
+            .params
+            .get_decimal("cost")
+            .expect("cost is missing"),
+        password_struct.salt.expect("salt is missing"),
+        password_struct.hash.expect("hash is missing")
+    )
 }
 
 impl std::str::FromStr for BcryptSubversion {
@@ -181,4 +223,20 @@ impl std::str::FromStr for BcryptSubversion {
             Err("invalid bcrypt identifier")
         }
     }
+}
+
+#[test]
+fn asdf() {
+    use password_hash::rand_core::RngCore;
+
+    let mut buffer = [0; 16];
+    password_hash::rand_core::OsRng.fill_bytes(&mut buffer);
+    let salt = bcrypt::BASE_64.encode(buffer);
+    let salt = password_hash::SaltString::from_b64(&salt)
+        .map_err(|err| err.to_string())
+        .unwrap();
+
+    let a = bcrypt::BASE_64.decode(salt.as_str());
+
+    assert_eq!(a, Ok(Vec::new()));
 }
