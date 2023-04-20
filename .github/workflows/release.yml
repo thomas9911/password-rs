@@ -41,17 +41,20 @@ jobs:
       with:
         toolchain: stable
         target: ${{ matrix.job.target }}
-
+    - name: Run rust tests
+      shell: bash
+      run: |
+        cd native/password_native && cargo test --all-features
     - name: Build the project
       id: build-crate
       uses: philss/rustler-precompiled-action@v1.0.1
       with:
-        project-name: password_rs
+        project-name: password_native
         project-version: ${{ env.PROJECT_VERSION }}
         target: ${{ matrix.job.target }}
         nif-version: ${{ matrix.nif }}
         use-cross: ${{ matrix.job.use-cross }}
-        project-dir: "native/password_rs"
+        project-dir: "native/password_native"
 
     - name: Artifact upload
       uses: actions/upload-artifact@v3

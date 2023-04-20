@@ -33,10 +33,6 @@ impl Default for BcryptWrapperParams {
     }
 }
 
-// impl<'a> From<&'a PasswordHash<'a>> for BcryptWrapperParams {
-
-// }
-
 impl TryInto<ParamsString> for BcryptWrapperParams {
     type Error = Error;
 
@@ -54,15 +50,6 @@ impl<'a> TryFrom<&'a PasswordHash<'a>> for BcryptWrapperParams {
     type Error = Error;
 
     fn try_from(value: &'a PasswordHash<'a>) -> Result<Self, Self::Error> {
-        // let encoded_params = value.try_into()?;
-
-        // Ok(PasswordHash{
-        //     algorithm: Ident::new_unwrap("2b"),
-        //     version: None,
-        //     params: encoded_params,
-        //     salt: None,
-        //     hash: None,
-        // })
         let cost = value
             .params
             .get_decimal("cost")
@@ -78,7 +65,7 @@ impl PasswordHasher for BcryptWrapper {
         &self,
         password: &[u8],
         algorithm: Option<Ident<'a>>,
-        version: Option<Decimal>,
+        _version: Option<Decimal>,
         params: Self::Params,
         salt: impl Into<Salt<'a>>,
     ) -> Result<PasswordHash<'a>, Error> {
@@ -223,20 +210,4 @@ impl std::str::FromStr for BcryptSubversion {
             Err("invalid bcrypt identifier")
         }
     }
-}
-
-#[test]
-fn asdf() {
-    use password_hash::rand_core::RngCore;
-
-    let mut buffer = [0; 16];
-    password_hash::rand_core::OsRng.fill_bytes(&mut buffer);
-    let salt = bcrypt::BASE_64.encode(buffer);
-    let salt = password_hash::SaltString::from_b64(&salt)
-        .map_err(|err| err.to_string())
-        .unwrap();
-
-    let a = bcrypt::BASE_64.decode(salt.as_str());
-
-    assert_eq!(a, Ok(Vec::new()));
 }

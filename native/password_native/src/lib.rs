@@ -64,6 +64,7 @@ pub trait PasswordVersion {
         Self: Sized;
 }
 
+#[non_exhaustive]
 pub enum Algorithm {
     #[cfg(feature = "argon2")]
     Argon2(algorithms::argon2::Argon2Subversion),
