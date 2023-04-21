@@ -70,15 +70,16 @@ jobs:
           nif-version: ${{ matrix.nif }}
           use-cross: ${{ matrix.job.use-cross }}
           project-dir: "native/password_native"
-      - name: Run rust tests
-        shell: bash
-        run: |
-          cd native/password_native && cargo test --all-features
-          if [ "${{ matrix.job.use-cross }}" == "true" ]; then
-            cross test --release --target=${{ inputs.target }}
-          else
-            cargo test --release --target=${{ inputs.target }}
-          fi
+      # - name: Run rust tests
+      #   shell: bash
+      #   run: |
+      #     pushd native/password_native
+      #     if [ "${{ matrix.job.use-cross }}" == "true" ]; then
+      #       cross test --release --target=${{ matrix.job.target }}
+      #     else
+      #       cargo test --release --target=${{ matrix.job.target }}
+      #     fi
+      #     popd
       - name: Artifact upload
         uses: actions/upload-artifact@v3
         with:

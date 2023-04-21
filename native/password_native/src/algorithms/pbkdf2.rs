@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-
-use argon2::PasswordHasher;
+use password_hash::PasswordHasher;
 use password_hash::Salt;
 use pbkdf2::Pbkdf2;
+use std::collections::HashMap;
 
 pub enum Pbkdf2Subversion {
     Sha1,

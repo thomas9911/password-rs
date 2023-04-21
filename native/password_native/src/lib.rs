@@ -1,7 +1,7 @@
 #[cfg(feature = "bcrypt")]
 use base64::Engine;
 
-use password_hash::rand_core::{OsRng, RngCore};
+use password_hash::rand_core::OsRng;
 use password_hash::{Ident, Salt};
 use rustler::types::atom;
 use rustler::{Env, NifResult, Term};
@@ -52,9 +52,9 @@ impl<T, E> From<Result<T, E>> for ErrorTuple<E> {
 }
 
 pub trait PasswordVersion {
-    fn identifier(&self) -> password_hash::Ident;
+    fn identifier(&self) -> Ident;
     fn find_algorithm_verifier(
-        algorithm: &password_hash::Ident,
+        algorithm: &Ident,
     ) -> Result<Box<dyn password_hash::PasswordVerifier>, String>;
     fn hash_password(
         &self,
@@ -62,7 +62,7 @@ pub trait PasswordVersion {
         salt: Salt,
         options: HashMap<String, u32>,
     ) -> Result<String, String>;
-    fn from_identifier(identifier: password_hash::Ident) -> Option<Self>
+    fn from_identifier(identifier: Ident) -> Option<Self>
     where
         Self: Sized;
 }
@@ -80,7 +80,7 @@ pub enum Algorithm {
 }
 
 impl PasswordVersion for Algorithm {
-    fn identifier(&self) -> password_hash::Ident {
+    fn identifier(&self) -> Ident {
         match self {
             #[cfg(feature = "argon2")]
             Algorithm::Argon2(version) => version.identifier(),
@@ -94,7 +94,7 @@ impl PasswordVersion for Algorithm {
         }
     }
 
-    fn from_identifier(identifier: password_hash::Ident) -> Option<Self> {
+    fn from_identifier(identifier: Ident) -> Option<Self> {
         #[cfg(feature = "argon2")]
         if let Some(algo) = algorithms::argon2::Argon2Subversion::from_identifier(identifier) {
             return Some(Algorithm::Argon2(algo));
@@ -119,7 +119,7 @@ impl PasswordVersion for Algorithm {
     }
 
     fn find_algorithm_verifier(
-        algorithm: &password_hash::Ident,
+        algorithm: &Ident,
     ) -> Result<Box<dyn password_hash::PasswordVerifier>, String> {
         #[cfg(feature = "argon2")]
         if let Ok(algo) = algorithms::argon2::Argon2Subversion::find_algorithm_verifier(algorithm) {
@@ -222,6 +222,8 @@ fn inner_hash_with(
 
     #[cfg(feature = "bcrypt")]
     let salt_string = if let Algorithm::Bcrypt(_) = algorithm {
+        use password_hash::rand_core::RngCore;
+
         // bcrypt uses non standard base64 encode and needs a salt that is 16 bytes
         let mut buffer = [0; 16];
         OsRng.fill_bytes(&mut buffer);
