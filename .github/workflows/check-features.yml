@@ -21,4 +21,4 @@ jobs:
         with:
           toolchain: stable
       - run: |
-          cd native/password_native && cargo test --no-default-features --feature ${{ matrix.feature }}
+          cd native/password_native && cargo test --no-default-features --features ${{ matrix.feature }}

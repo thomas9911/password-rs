@@ -12,7 +12,6 @@ jobs:
     name: NIF ${{ matrix.nif }} - ${{ matrix.job.target }} (${{ matrix.job.os }})
     runs-on: ${{ matrix.job.os }}
     strategy:
-      fail-fast: false
       matrix:
         nif: ["2.16", "2.15"]
         job:
@@ -61,15 +60,6 @@ jobs:
         with:
           toolchain: stable
           target: ${{ matrix.job.target }}
-      - name: Run rust tests
-        shell: bash
-        run: |
-          cd native/password_native && cargo test --all-features
-          if [ "${{ matrix.job.use-cross }}" == "true" ]; then
-            cross test --release --target=${{ inputs.target }}
-          else
-            cargo test --release --target=${{ inputs.target }}
-          fi
       - name: Build the project
         id: build-crate
         uses: philss/rustler-precompiled-action@v1.0.1
@@ -80,7 +70,15 @@ jobs:
           nif-version: ${{ matrix.nif }}
           use-cross: ${{ matrix.job.use-cross }}
           project-dir: "native/password_native"
-
+      - name: Run rust tests
+        shell: bash
+        run: |
+          cd native/password_native && cargo test --all-features
+          if [ "${{ matrix.job.use-cross }}" == "true" ]; then
+            cross test --release --target=${{ inputs.target }}
+          else
+            cargo test --release --target=${{ inputs.target }}
+          fi
       - name: Artifact upload
         uses: actions/upload-artifact@v3
         with:
