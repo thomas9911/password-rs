@@ -1,0 +1,31 @@
+name: Check
+
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    name: OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
+    strategy:
+      matrix:
+        otp: ["23.3", "24.3", "25.3"]
+        elixir: ["1.12.3", "1.13.4", "1.14.3"]
+        exclude:
+          - otp: "25.3"
+            elixir: "1.12.3"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            _build
+            deps
+          key: otp-${{ matrix.otp }}-elixir-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
+      - run: mix deps.get
+      - run: mix credo
+      - run: mix test
+      - run: mix dialyzer

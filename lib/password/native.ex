@@ -34,6 +34,7 @@ defmodule Password.Native do
   def verify(_password, _hash), do: nif_error()
   def verify_with(_password, _hash, _algorithms), do: nif_error()
   def known_algorithms, do: nif_error()
+  def recommended_algorithms, do: nif_error()
 
   defp nif_error, do: :erlang.nif_error(:nif_not_loaded)
 end

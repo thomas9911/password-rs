@@ -44,6 +44,55 @@ defmodule PasswordTest do
                  "$scrypt$ln=7,r=8,p=1$+h7sTjFtfHSn5HaVhG+yOA$hrO7W/4yrYrgqQfHMCF922oCFizjfezxlL3JuUEvrbM"
                )
     end
+
+    test "pbkdf2-sha256" do
+      assert :ok ==
+               Password.verify(
+                 "testing1234",
+                 "$pbkdf2-sha256$i=1000,l=32$JVUJglG6febK3Z4xmlDMvQ$aAMkB1orgDP4qf87SZSIRcc++3eS5aNjgyCF9rFiaps"
+               )
+
+      assert {:error, "invalid password"} ==
+               Password.verify(
+                 "testing1234",
+                 "$pbkdf2-sha256$i=2500,l=32$JVUJglG6febK3Z4xmlDMvQ$aAMkB1orgDP4qf87SZSIRcc++3eS5aNjgyCF9rFiaps"
+               )
+    end
+  end
+
+  describe "verify_with" do
+    test "argon2-scrypt allowed" do
+      allowed = [:argon2id, :scrypt]
+
+      assert :ok ==
+               Password.verify_with(
+                 "testing1234",
+                 "$argon2id$v=19$m=16,t=2,p=1$ekwxb1piSWRxS1dzM2FnMQ$JGGTmshkt4PaO1sSX7w1Gg",
+                 allowed
+               )
+
+      assert :ok ==
+               Password.verify_with(
+                 "testing1234",
+                 "$scrypt$ln=10,r=8,p=1$+h7sTjFtfHSn5HaVhG+yOA$hrO7W/4yrYrgqQfHMCF922oCFizjfezxlL3JuUEvrbM",
+                 allowed
+               )
+
+      assert {:error, "algorithm not in allowed list"} ==
+               Password.verify_with(
+                 "testing1234",
+                 "$2a$12$5udTI/WUkIdt4n7Rt5x0cOcLjoc.Ax1sSvr3qrBkTTQu1y6sbDVLK",
+                 allowed
+               )
+
+      # still verifies password
+      assert {:error, "invalid password"} ==
+               Password.verify_with(
+                 "testing1234",
+                 "$scrypt$ln=5,r=8,p=1$+h7sTjFtfHSn5HaVhG+yOA$hrO7W/4yrYrgqQfHMCF922oCFizjfezxlL3JuUEvrbM",
+                 allowed
+               )
+    end
   end
 
   describe "hash" do
@@ -82,6 +131,25 @@ defmodule PasswordTest do
 
     test "bcrypt" do
       assert {:ok, "$2a$12$" <> _} = Password.hash_with("testing1234", :"2a")
+    end
+
+    test "pbkdf2-sha512" do
+      assert {:ok, "$pbkdf2-sha512$i=10000,l=32$" <> _} =
+               Password.hash_with("testing1234", :"pbkdf2-sha512")
+    end
+
+    test "pbkdf2-sha256" do
+      assert {:ok, "$pbkdf2-sha256$i=10000,l=32$" <> _} =
+               Password.hash_with("testing1234", :"pbkdf2-sha256")
+    end
+
+    test "pbkdf2-sha1" do
+      assert {:ok, "$pbkdf2$i=10000,l=32$" <> _} = Password.hash_with("testing1234", :pbkdf2)
+    end
+
+    test "pbkdf2-sha256, custom" do
+      assert {:ok, "$pbkdf2-sha256$i=1000,l=32$" <> _} =
+               Password.hash_with("testing1234", :"pbkdf2-sha256", %{"i" => 1000})
     end
   end
 

@@ -1,0 +1,24 @@
+name: Check
+
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    name: Check feature - ${{matrix.feature}}
+    strategy:
+      matrix:
+        feature: ["argon2", "scrypt", "bcrypt", "pbkdf2"]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            native/password_native/target
+          key: rust-feature-${{ matrix.feature }}-${{ hashFiles('native/password_native/Cargo.lock') }}
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - run: |
+          cd native/password_native && cargo test --no-default-features --feature ${{ matrix.feature }}

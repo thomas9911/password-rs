@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
+use argon2::PasswordHasher;
 use password_hash::Salt;
+use pbkdf2::Pbkdf2;
 
 pub enum Pbkdf2Subversion {
     Sha1,
@@ -48,7 +50,21 @@ impl crate::PasswordVersion for Pbkdf2Subversion {
         salt: Salt,
         options: HashMap<String, u32>,
     ) -> Result<String, String> {
-        Ok(String::from("oke"))
+        let mut params = pbkdf2::Params::default();
+        if let Some(iterations) = options.get("i") {
+            params.rounds = *iterations;
+        }
+
+        let password_struct = Pbkdf2
+            .hash_password_customized(
+                password.as_bytes(),
+                Some(self.identifier()),
+                None,
+                params,
+                salt,
+            )
+            .map_err(|err| err.to_string())?;
+        Ok(password_struct.to_string())
     }
 }
 
