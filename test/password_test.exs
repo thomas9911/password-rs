@@ -171,5 +171,10 @@ defmodule PasswordTest do
       assert :ok == Password.verify("testing1234", hash)
       assert {:error, "invalid password"} == Password.verify("testtest", hash)
     end
+
+    test "emoji" do
+      {:ok, hash} = Password.hash_with("🌲🛴✔️🚀", :argon2id)
+      assert :ok == Password.verify("🌲🛴✔️🚀", hash)
+    end
   end
 end

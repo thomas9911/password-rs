@@ -28,7 +28,8 @@ defmodule Password.MixProject do
       {:rustler_precompiled, "~> 0.6"},
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
-      {:credo, "~> 1.7", only: :dev, runtime: false}
+      {:credo, "~> 1.7", only: :dev, runtime: false},
+      {:stream_data, "~> 0.5", only: :test}
     ]
   end
 
