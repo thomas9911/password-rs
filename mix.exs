@@ -29,7 +29,8 @@ defmodule Password.MixProject do
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: :dev, runtime: false},
-      {:stream_data, "~> 0.5", only: :test}
+      {:stream_data, "~> 0.5", only: :test},
+      {:mix_readme, "~> 0.2.1", only: :dev, runtime: false}
     ]
   end
 
@@ -38,7 +39,13 @@ defmodule Password.MixProject do
       quality: ["fmt", "credo", "dialyzer"],
       fmt: ["cmd --cd native/password_native cargo fmt", "format"],
       cargo: "cmd --cd native/password_native cargo",
-      "test.rust": "cargo test --all-features"
+      "test.rust": "cargo test --all-features",
+      readme: &readme/1
     ]
+  end
+
+  defp readme(_) do
+    readme = ExUnit.CaptureIO.capture_io(fn -> Mix.Task.run(:readme, ["--module", "Password"]) end)
+    File.write!("README.md", readme)
   end
 end

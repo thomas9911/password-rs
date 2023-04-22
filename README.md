@@ -1,6 +1,24 @@
 # Password
 
-**TODO: Add description**
+## Usage
+
+Hashes and verifies passwords.
+
+Nearly all password formats are
+[PHC](https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md),
+except for Bcrypt which uses its own format.
+
+examples:
+
+```js
+// argon2id
+"$argon2id$v=19$m=16,t=2,p=1$ekwxb1piSWRxS1dzM2FnMQ$JGGTmshkt4PaO1sSX7w1Gg";
+// bcrypt
+"$2a$12$5udTI/WUkIdt4n7Rt5x0cOcLjoc.Ax1sSvr3qrBkTTQu1y6sbDVLK";
+```
+
+This because Bcrypt in other libraries in other languages also use this format
+(checked: python, ruby, rust, elixir)
 
 ## Installation
 
@@ -15,11 +33,8 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/password_rs>.
+## URLs
 
-https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md
-https://crates.io/crates/password-hash
-https://github.com/RustCrypto/traits/tree/master/password-hash
-https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#maximum-password-lengths
+- https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md
+- https://github.com/RustCrypto/traits/tree/master/password-hash
+- https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#maximum-password-lengths

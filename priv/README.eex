@@ -1,0 +1,23 @@
+# Password
+
+## Usage
+
+<%= module_doc %>
+## Installation
+
+If [available in Hex](https://hex.pm/docs/publish), the package can be installed
+by adding `password_rs` to your list of dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:password_rs, "~> <%= version %>"}
+  ]
+end
+```
+
+## URLs
+
+- https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md
+- https://github.com/RustCrypto/traits/tree/master/password-hash
+- https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#maximum-password-lengths
