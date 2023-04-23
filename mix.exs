@@ -19,7 +19,18 @@ defmodule Password.MixProject do
   defp package do
     [
       licenses: ["MIT"],
-      links: %{"Github" => "https://github.com/thomas9911"}
+      links: %{"Github" => "https://github.com/thomas9911"},
+      files: [
+        "lib",
+        "native/password_native/.cargo",
+        "native/password_native/src",
+        "native/password_native/Cargo*",
+        "checksum-*.exs",
+        "mix.exs",
+        ".formatter.exs",
+        "README*",
+        "LICENSE*"
+      ]
     ]
   end
 
