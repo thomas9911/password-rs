@@ -1,5 +1,11 @@
 # Password
 
+Hashes and verifies passwords. 
+
+Other Elixir libraries use a C nif to generate password hashes. 
+This libary uses a Rust nif (using [Rustler](https://github.com/rusterlium/rustler)) and the Rust libraries the generate the different hashes.
+Additionally this library uses [RustlerPrecompiled](https://github.com/philss/rustler_precompiled) so you don't need to have a Rust compiler installed to use this library.
+
 ## Usage
 
 <%= module_doc %>
@@ -19,5 +25,12 @@ end
 ## URLs
 
 - https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md
-- https://github.com/RustCrypto/traits/tree/master/password-hash
 - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#maximum-password-lengths
+
+### Rust URLS
+
+- https://github.com/RustCrypto/traits/tree/master/password-hash
+- https://github.com/RustCrypto/password-hashes/tree/master/argon2
+- https://github.com/RustCrypto/password-hashes/tree/master/scrypt
+- https://github.com/RustCrypto/password-hashes/tree/master/pbkdf2
+- https://github.com/Keats/rust-bcrypt

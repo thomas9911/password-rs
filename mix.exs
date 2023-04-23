@@ -10,7 +10,16 @@ defmodule Password.MixProject do
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      aliases: aliases()
+      aliases: aliases(),
+      description: "Hashes and verifies passwords using Rust in Elixir",
+      package: package()
+    ]
+  end
+
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{"Github" => "https://github.com/thomas9911"}
     ]
   end
 
