@@ -93,6 +93,8 @@ impl std::str::FromStr for Argon2Subversion {
             Ok(Argon2Subversion::I)
         } else if argon2::ARGON2D_IDENT.as_str() == input {
             Ok(Argon2Subversion::D)
+        } else if "argon2" == input {
+            Ok(Argon2Subversion::Id)
         } else {
             Err("invalid argon2 identifier")
         }

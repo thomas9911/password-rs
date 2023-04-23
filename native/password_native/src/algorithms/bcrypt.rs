@@ -188,7 +188,7 @@ fn format_mfc_format(password_struct: PasswordHash) -> String {
         password_struct
             .params
             .get_decimal("cost")
-            .expect("cost is missing"),
+            .unwrap_or(bcrypt::DEFAULT_COST),
         password_struct.salt.expect("salt is missing"),
         password_struct.hash.expect("hash is missing")
     )
@@ -205,6 +205,8 @@ impl std::str::FromStr for BcryptSubversion {
         } else if "2y" == input {
             Ok(BcryptSubversion::Y)
         } else if "2b" == input {
+            Ok(BcryptSubversion::B)
+        } else if "bcrypt" == input {
             Ok(BcryptSubversion::B)
         } else {
             Err("invalid bcrypt identifier")

@@ -8,6 +8,7 @@ use bcrypt::{BcryptError, BcryptResult};
 /// A bcrypt hash result before concatenating
 pub struct HashParts<'a> {
     pub cost: u32,
+    pub version: &'a str,
     pub salt: &'a str,
     pub hash: &'a str,
 }
@@ -17,6 +18,7 @@ pub struct HashParts<'a> {
 pub fn split_hash<'a>(hash: &'a str) -> BcryptResult<HashParts<'a>> {
     let mut parts = HashParts {
         cost: 0,
+        version: "",
         salt: "",
         hash: "",
     };
@@ -32,6 +34,8 @@ pub fn split_hash<'a>(hash: &'a str) -> BcryptResult<HashParts<'a>> {
     {
         return Err(BcryptError::InvalidPrefix(raw_parts[0].to_string()));
     }
+
+    parts.version = raw_parts[0];
 
     if let Ok(c) = raw_parts[1].parse::<u32>() {
         parts.cost = c;
@@ -55,6 +59,7 @@ fn split_hash_test() {
     assert_eq!(
         HashParts {
             cost: 12,
+            version: "2a",
             salt: "5udTI/WUkIdt4n7Rt5x0cO",
             hash: "cLjoc.Ax1sSvr3qrBkTTQu1y6sbDVLK"
         },

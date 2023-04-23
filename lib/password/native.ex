@@ -1,6 +1,6 @@
 defmodule Password.Native do
   @moduledoc """
-  Documentation for `Password.Native`. Module for linking Elixir to the Rust library
+  Module for linking Elixir to the Rust library
   """
 
   version = Mix.Project.config()[:version]

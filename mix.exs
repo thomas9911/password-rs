@@ -45,7 +45,9 @@ defmodule Password.MixProject do
   end
 
   defp readme(_) do
-    readme = ExUnit.CaptureIO.capture_io(fn -> Mix.Task.run(:readme, ["--module", "Password"]) end)
+    readme =
+      ExUnit.CaptureIO.capture_io(fn -> Mix.Task.run(:readme, ["--module", "Password"]) end)
+
     File.write!("README.md", readme)
   end
 end

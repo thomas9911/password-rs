@@ -93,6 +93,31 @@ defmodule PasswordTest do
                  allowed
                )
     end
+
+    test "old bcrypt" do
+      allowed = [:"2b"]
+
+      assert {:error, "algorithm not in allowed list"} ==
+               Password.verify_with(
+                 "testing1234",
+                 "$2a$12$5udTI/WUkIdt4n7Rt5x0cOcLjoc.Ax1sSvr3qrBkTTQu1y6sbDVLK",
+                 allowed
+               )
+
+      assert {:error, "algorithm not in allowed list"} ==
+               Password.verify_with(
+                 "testing1234",
+                 "$2x$12$5udTI/WUkIdt4n7Rt5x0cOcLjoc.Ax1sSvr3qrBkTTQu1y6sbDVLK",
+                 allowed
+               )
+
+      assert :ok ==
+               Password.verify_with(
+                 "testing1234",
+                 "$2b$12$5udTI/WUkIdt4n7Rt5x0cOcLjoc.Ax1sSvr3qrBkTTQu1y6sbDVLK",
+                 allowed
+               )
+    end
   end
 
   describe "hash" do

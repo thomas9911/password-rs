@@ -297,7 +297,7 @@ fn to_password_struct<'a>(hash_string: &'a str) -> Result<password_hash::Passwor
             .map_err(|err| err.to_string())?;
 
         return Ok(password_hash::PasswordHash {
-            algorithm: Ident::new_unwrap("2b"),
+            algorithm: Ident::new_unwrap(parts.version),
             version: None,
             params: params,
             salt: Some(salt),
