@@ -1,0 +1,12 @@
+FROM elixir:1.14.4-otp-24-alpine
+
+ENV MIX_ARCHIVES /usr/local/bin
+RUN mix local.hex --force
+RUN mix archive.install --force hex mix_edit
+
+WORKDIR /
+RUN mix new testing
+WORKDIR /testing
+RUN mix edit.add --apply password_rs
+RUN mix compile
+CMD mix run -e 'IO.inspect(Password.hash("testing"))'
